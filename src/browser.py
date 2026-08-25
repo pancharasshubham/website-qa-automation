@@ -1,4 +1,5 @@
 import requests
+import time
 from urllib.parse import urljoin
 
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
@@ -31,13 +32,30 @@ def check_link(url):
 
 
 with sync_playwright() as p:
+    start_time = time.time()
     browser = p.chromium.launch(headless=False)
     page = browser.new_page()
+    url = "https://example.com"
+
+    result = {
+        "website": url,
+        "status": "FAIL",
+        "duration": 0,
+        "checks": {
+            "page_loaded": False,
+            "title": False,
+            "content": False,
+        },
+        "links": {
+            "checked": 0,
+            "broken": 0,
+        },
+    }
 
     try:
-        page.goto("https://example.com", timeout=10000)
+        page.goto(url, timeout=10000)
         page_loaded = True
-        print("[PASS] Page loaded")
+        result["checks"]["page_loaded"] = True
 
     except PlaywrightTimeoutError:
         print("[FAIL] Page load timed out")
@@ -53,7 +71,7 @@ with sync_playwright() as p:
     page_loaded = False
 
     try:
-        page.goto("https://example.com", timeout=10000)
+        page.goto(url, timeout=10000)
         page_loaded = True
         print("[PASS] Page loaded")
 
@@ -61,14 +79,18 @@ with sync_playwright() as p:
         print("[FAIL] Page load timed out")
 
     title_passed = check(
-        page.title() == "Example Domain",
+        page.title() == "Example title",
         "Title matches"
     )
+
+    result["checks"]["title"] = title_passed
 
     content_passed = check(
         page.get_by_text("Example Domain").is_visible(),
         "Expected content visible"
-    )
+    )   
+
+    result["checks"]["content"] = content_passed
 
     # Link checks
     links = page.locator("a")
@@ -79,6 +101,7 @@ with sync_playwright() as p:
     print()
 
     broken_links = 0
+    links_checked = 0
 
     for i in range(link_count):
         href = links.nth(i).get_attribute("href")
@@ -101,6 +124,13 @@ with sync_playwright() as p:
         else:
             print(f"[FAIL] {full_url} ({status_code})")
             broken_links += 1
+            links_checked += 1
+
+    duration = round(time.time() - start_time, 2)
+
+    result["duration"] = duration
+    result["links"]["checked"] = links_checked
+    result["links"]["broken"] = broken_links
 
     # Overall result
     print()
@@ -113,7 +143,23 @@ with sync_playwright() as p:
         and broken_links == 0
     )
 
-    print()
+    result["status"] = "PASS" if overall_passed else "FAIL"
     print("Overall:", "PASS" if overall_passed else "FAIL")
+
+    print()
+    print("Test Result")
+    print("-----------")
+    print("Website:", result["website"])
+    print("Status:", result["status"])
+    print("Duration:", result["duration"], "seconds")
+    print()
+    print("Checks:")
+    print("  Page loaded:", result["checks"]["page_loaded"])
+    print("  Title:", result["checks"]["title"])
+    print("  Content:", result["checks"]["content"])
+    print()
+    print("Links:")
+    print("  Checked:", result["links"]["checked"])
+    print("  Broken:", result["links"]["broken"])
 
     browser.close()
