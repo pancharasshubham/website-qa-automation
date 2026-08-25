@@ -1,7 +1,13 @@
 import requests
 from urllib.parse import urljoin
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+
+from playwright.sync_api import (
+    sync_playwright,
+    TimeoutError as PlaywrightTimeoutError,
+    Error as PlaywrightError
+)
 
 
 def check(condition, test_name):
@@ -19,7 +25,8 @@ def check_link(url):
 
         return response.status_code < 400, response.status_code
 
-    except requests.RequestException:
+    except requests.RequestException as error:
+        print(f"[ERROR] Could not check {url}: {error}")
         return False, None
 
 
@@ -27,13 +34,31 @@ with sync_playwright() as p:
     browser = p.chromium.launch(headless=False)
     page = browser.new_page()
 
-    page.goto("https://pancharasshubham.com")
+    try:
+        page.goto("https://example.com", timeout=10000)
+        page_loaded = True
+        print("[PASS] Page loaded")
+
+    except PlaywrightTimeoutError:
+        print("[FAIL] Page load timed out")
+
+    except PlaywrightError as error:
+        print(f"[FAIL] Playwright error: {error}")
 
     print("Website:", page.url)
-    print()
 
     # Basic page checks
     print("[PASS] Page loaded")
+
+    page_loaded = False
+
+    try:
+        page.goto("https://example.com", timeout=10000)
+        page_loaded = True
+        print("[PASS] Page loaded")
+
+    except PlaywrightTimeoutError:
+        print("[FAIL] Page load timed out")
 
     title_passed = check(
         page.title() == "Example Domain",
@@ -82,7 +107,8 @@ with sync_playwright() as p:
     print("Broken links:", broken_links)
 
     overall_passed = (
-        title_passed
+        page_loaded
+        and title_passed
         and content_passed
         and broken_links == 0
     )
