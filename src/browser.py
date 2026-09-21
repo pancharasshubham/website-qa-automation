@@ -1,14 +1,16 @@
-import requests
 import json
+import logging
 import time
 from urllib.parse import urljoin
 
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+import requests
+from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError, sync_playwright
 
-from playwright.sync_api import (
-    sync_playwright,
-    TimeoutError as PlaywrightTimeoutError,
-    Error as PlaywrightError
+logging.basicConfig(
+    filename="reports/automation.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 
@@ -32,6 +34,8 @@ def check_link(url):
         return False, None
 
 
+logging.info("Starting website QA automation")
+
 with sync_playwright() as p:
     start_time = time.time()
     browser = p.chromium.launch(headless=False)
@@ -51,47 +55,41 @@ with sync_playwright() as p:
             "checked": 0,
             "broken": 0,
         },
+        "screenshot": "",
     }
 
     try:
-        page.goto(url, timeout=10000)
+        page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page_loaded = True
         result["checks"]["page_loaded"] = True
-
+        logging.info(f"Page loaded successfully: {url}")
     except PlaywrightTimeoutError:
-        print("[FAIL] Page load timed out")
-
+        page_loaded = False
+        logging.error(f"Page load timeout: {url}")
     except PlaywrightError as error:
-        print(f"[FAIL] Playwright error: {error}")
+        page_loaded = False
+        logging.error(f"Playwright error: {error}")
 
     print("Website:", page.url)
 
-    # Basic page checks
-    print("[PASS] Page loaded")
+    title_passed = False
+    content_passed = False
 
-    page_loaded = False
+    if page_loaded:
+        title_passed = check(
+            page.title() == "Failed Domain",
+            "Title matches"
+        )
+        result["checks"]["title"] = title_passed
 
-    try:
-        page.goto(url, timeout=10000)
-        page_loaded = True
-        print("[PASS] Page loaded")
+        content_passed = check(
+            page.get_by_text("Example Domain").is_visible(),
+            "Expected content visible"
+        )
+        result["checks"]["content"] = content_passed
 
-    except PlaywrightTimeoutError:
-        print("[FAIL] Page load timed out")
-
-    title_passed = check(
-        page.title() == "Example Domain",
-        "Title matches"
-    )
-
-    result["checks"]["title"] = title_passed
-
-    content_passed = check(
-        page.get_by_text("Example Domain").is_visible(),
-        "Expected content visible"
-    )   
-
-    result["checks"]["content"] = content_passed
+    else:
+        logging.error("Page did not load successfully; skipping title/content checks.")
 
     # Link checks
     links = page.locator("a")
@@ -146,6 +144,14 @@ with sync_playwright() as p:
 
     result["status"] = "PASS" if overall_passed else "FAIL"
     print("Overall:", "PASS" if overall_passed else "FAIL")
+
+    if not overall_passed:
+        screenshot_path = "reports/screenshots/failure.png"
+        page.screenshot(path=screenshot_path, full_page=True)
+        result["screenshot"] = screenshot_path
+        logging.error(f"Test failed. Screenshot saved: {screenshot_path}")
+
+    logging.info(f"Automation completed with status: {result['status']}")
 
     print()
     print("Test Result")

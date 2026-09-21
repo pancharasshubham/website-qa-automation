@@ -1,0 +1,12 @@
+2026-09-21 23:06:52,714 - INFO - Starting website QA automation
+2026-09-21 23:06:56,193 - INFO - Page loaded successfully: https://example.com
+2026-09-21 23:06:58,602 - INFO - Automation completed with status: PASS
+2026-09-21 23:09:51,910 - INFO - Starting website QA automation
+2026-09-21 23:09:54,180 - INFO - Page loaded successfully: https://example.com
+2026-09-21 23:09:56,767 - INFO - Automation completed with status: PASS
+2026-09-21 23:17:10,839 - INFO - Starting website QA automation
+2026-09-21 23:17:12,935 - INFO - Page loaded successfully: https://example.com
+2026-09-21 23:20:24,752 - INFO - Starting website QA automation
+2026-09-21 23:20:27,139 - INFO - Page loaded successfully: https://example.com
+2026-09-21 23:20:29,942 - ERROR - Test failed. Screenshot saved: reports/screenshots/failure.png
+2026-09-21 23:20:29,942 - INFO - Automation completed with status: FAIL

@@ -1,14 +1,15 @@
 {
     "website": "https://example.com",
-    "status": "PASS",
-    "duration": 3.44,
+    "status": "FAIL",
+    "duration": 3.6,
     "checks": {
         "page_loaded": true,
-        "title": true,
+        "title": false,
         "content": true
     },
     "links": {
         "checked": 0,
         "broken": 0
-    }
+    },
+    "screenshot": "reports/screenshots/failure.png"
 }
