@@ -1,4 +1,5 @@
 import requests
+import json
 import time
 from urllib.parse import urljoin
 
@@ -79,7 +80,7 @@ with sync_playwright() as p:
         print("[FAIL] Page load timed out")
 
     title_passed = check(
-        page.title() == "Example title",
+        page.title() == "Example Domain",
         "Title matches"
     )
 
@@ -163,3 +164,8 @@ with sync_playwright() as p:
     print("  Broken:", result["links"]["broken"])
 
     browser.close()
+
+    with open("reports/report.json", "w") as file:
+        json.dump(result, file, indent=4)
+
+    print("Report saved: reports/report.json")

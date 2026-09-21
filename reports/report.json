@@ -1,0 +1,14 @@
+{
+    "website": "https://example.com",
+    "status": "PASS",
+    "duration": 3.44,
+    "checks": {
+        "page_loaded": true,
+        "title": true,
+        "content": true
+    },
+    "links": {
+        "checked": 0,
+        "broken": 0
+    }
+}
